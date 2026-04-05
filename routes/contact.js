@@ -73,22 +73,26 @@ router.post('/', limiter, contactValidation, async (req, res, next) => {
     // 2. Save to local JSON store
     await saveSubmission(submission);
 
-    // 3. Send email notification (non-blocking failure — log but don't crash)
-    try {
-      await sendContactEmail(submission);
-      logger.info(`✉  Email sent for submission ${submission.id} from ${email}`);
-    } catch (emailErr) {
-      logger.error(`⚠  Email failed for submission ${submission.id}: ${emailErr.message}`);
-      // Still return success — data is saved even if email fails
-    }
+    logger.info(`New submission ${submission.id} - ${name} <${email}>`);
 
-    logger.info(`📥  New submission ${submission.id} — ${name} <${email}>`);
-
-    return res.status(201).json({
+    // 3. Return response immediately
+    res.status(201).json({
       success: true,
       message: "Thanks for reaching out! I'll get back to you soon.",
       submissionId: submission.id,
     });
+
+    // 4. Send email in the background (do not block API response)
+    setImmediate(async () => {
+      try {
+        await sendContactEmail(submission);
+        logger.info(`Email sent for submission ${submission.id} from ${email}`);
+      } catch (emailErr) {
+        logger.error(`Email failed for submission ${submission.id}: ${emailErr.message}`);
+      }
+    });
+
+    return;
   } catch (err) {
     next(err);
   }
@@ -120,3 +124,4 @@ router.get('/:id', async (req, res, next) => {
 });
 
 module.exports = router;
+
