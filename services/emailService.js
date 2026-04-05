@@ -16,7 +16,11 @@ function createTransporter() {
   }
 
   return nodemailer.createTransport({
-    service: "gmail",
+    host: "smtp.gmail.com",
+    port: 587, // ✅ Render allows port 587
+    secure: false, // ✅ STARTTLS, NOT SSL
+    requireTLS: true, // ✅ force upgrade to TLS after connecting
+    tls: { rejectUnauthorized: false },
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS, // Use an App Password — NOT your real password
